@@ -1,18 +1,16 @@
-export function AboutSection() {
+import type { SellerContent } from "@/lib/seller-content"
+
+export function AboutSection({ seller }: { seller: SellerContent }) {
   return (
     <section id="about" className="py-20 md:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center space-y-8">
-          <h2 className="text-4xl md:text-5xl font-bold text-balance">Socks as Art, Comfort as Priority</h2>
+          <h2 className="text-4xl md:text-5xl font-bold text-balance">{seller.name}: socks as art</h2>
           <p className="text-xl text-muted-foreground font-mono text-pretty leading-relaxed">
-            {
-              "At Jorab Moon, we believe that every detail matters. Our socks are more than just accessories—they're a canvas for self-expression, a conversation starter, and a daily reminder to embrace color and creativity."
-            }
+            {seller.description}
           </p>
           <p className="text-lg text-muted-foreground font-mono text-pretty leading-relaxed">
-            {
-              "Founded by artists and designers who were tired of boring basics, we set out to create socks that combine premium comfort with bold, artistic designs. Each collection is carefully curated to bring joy to your everyday wardrobe."
-            }
+            Every image in this storefront is loaded from the seller&apos;s storage bucket, so each seller can publish a different collection without changing the app.
           </p>
           <div className="grid sm:grid-cols-3 gap-8 pt-12">
             <div className="space-y-2">

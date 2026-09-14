@@ -28,3 +28,30 @@ Continue building your app on:
 2. Deploy your chats from the v0 interface
 3. Changes are automatically pushed to this repository
 4. Vercel deploys the latest version from this repository
+
+## Seller storage
+
+The storefront can render a seller directly from a Supabase Storage bucket. Set
+`SELLER_ROOT_DOMAIN` to the shared domain (defaults to `sockseller.com`) and
+`SELLER_BUCKET` to the default bucket (defaults to `joorabmoon`). A host such as
+`joorabmoon.sockseller.com` automatically selects the `joorabmoon` bucket.
+
+Upload image files (`jpg`, `jpeg`, `png`, `webp`, `gif`, or `avif`) to the bucket.
+The filename becomes the product name, and the public image URL is used throughout
+the storefront. An optional `content.json` file can customize the seller:
+
+```json
+{
+  "name": "Joorabmoon",
+  "tagline": "Step into color",
+  "description": "A short seller description.",
+  "products": [
+    {
+      "name": "Midnight Pattern",
+      "description": "A product description.",
+      "price": 24.99,
+      "colors": ["Black", "Navy"]
+    }
+  ]
+}
+```

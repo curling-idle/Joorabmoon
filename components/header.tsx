@@ -8,7 +8,7 @@ import { Logo } from "@/components/logo"
 import { useAuth } from "@/lib/auth-context"
 import { useCart } from "@/lib/cart-context"
 
-export function Header() {
+export function Header({ sellerName = "Jorab Moon" }: { sellerName?: string }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const { user, profile, signOut, isMockMode, setMockUser } = useAuth()
@@ -19,7 +19,7 @@ export function Header() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center">
-            <Logo />
+            <Logo sellerName={sellerName} />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">

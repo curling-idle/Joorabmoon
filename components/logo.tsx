@@ -1,4 +1,4 @@
-export function Logo() {
+export function Logo({ sellerName = "Jorab Moon" }: { sellerName?: string }) {
   return (
     <div className="flex items-center gap-2">
       <div className="relative">
@@ -25,7 +25,7 @@ export function Logo() {
         </svg>
       </div>
       <div className="flex flex-col leading-none">
-        <span className="text-xl font-bold tracking-tight">Jorab Moon</span>
+        <span className="text-xl font-bold tracking-tight">{sellerName}</span>
         <span className="font-mono text-[10px] tracking-wider text-muted-foreground">ARTISTIC SOCKS</span>
       </div>
     </div>
