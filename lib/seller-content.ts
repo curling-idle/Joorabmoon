@@ -1,4 +1,11 @@
 import { headers } from "next/headers"
+import {
+  GetObjectCommand,
+  ListObjectsV2Command,
+  S3Client,
+  S3ServiceException,
+} from "@aws-sdk/client-s3"
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { mockProducts } from "./mock-data"
 
 export type SellerProduct = {
@@ -90,50 +97,68 @@ async function getBucketFromHost() {
   return subdomain || configuredBucket
 }
 
-function toPublicUrl(
-  supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>,
-  bucket: string,
-  path: string,
-) {
-  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+function getRustfsClient() {
+  const endpoint = process.env.RUSTFS_ENDPOINT
+  const accessKeyId = process.env.RUSTFS_ACCESS_KEY_ID
+  const secretAccessKey = process.env.RUSTFS_SECRET_ACCESS_KEY
+
+  if (!endpoint || !accessKeyId || !secretAccessKey) return null
+
+  return new S3Client({
+    endpoint,
+    region: process.env.RUSTFS_REGION || "us-east-1",
+    forcePathStyle: true,
+    credentials: { accessKeyId, secretAccessKey },
+  })
+}
+
+async function toSignedUrl(client: S3Client, bucket: string, path: string) {
+  return getSignedUrl(
+    client,
+    new GetObjectCommand({ Bucket: bucket, Key: path }),
+    { expiresIn: 60 * 60 },
+  )
 }
 
 export async function getSellerContent(): Promise<SellerContent> {
   const bucket = await getBucketFromHost()
   const fallback = getFallbackContent(bucket)
+  const rustfs = getRustfsClient()
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return fallback
-  }
+  if (!rustfs) return fallback
 
   try {
-    const { createClient } = await import("@/lib/supabase/server")
-    const supabase = await createClient()
-    const { data: files, error } = await supabase.storage.from(bucket).list("", {
-      limit: 100,
-      sortBy: { column: "name", order: "asc" },
-    })
-
-    if (error) throw error
-
-    const imageFiles = (files || []).filter((file) => file.name && imageExtensions.test(file.name))
+    const { Contents = [] } = await rustfs.send(
+      new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 100 }),
+    )
+    const imageFiles = Contents
+      .filter((file) => file.Key && imageExtensions.test(file.Key))
+      .sort((a, b) => (a.Key || "").localeCompare(b.Key || ""))
     if (!imageFiles.length) return fallback
 
-    const imageUrls = imageFiles.map((file) => toPublicUrl(supabase, bucket, file.name!))
+    const imageUrls = await Promise.all(
+      imageFiles.map((file) => toSignedUrl(rustfs, bucket, file.Key!)),
+    )
     let content: ContentFile = {}
-    const { data: contentFile } = await supabase.storage.from(bucket).download("content.json")
-    if (contentFile) content = JSON.parse(await contentFile.text()) as ContentFile
+    try {
+      const contentFile = await rustfs.send(
+        new GetObjectCommand({ Bucket: bucket, Key: "content.json" }),
+      )
+      if (contentFile.Body) {
+        content = JSON.parse(await contentFile.Body.transformToString()) as ContentFile
+      }
+    } catch (error) {
+      if (!(error instanceof S3ServiceException) || error.name !== "NoSuchKey") throw error
+    }
 
     const products = imageFiles.map((file, index) => {
       const configuredProduct = content.products?.[index]
       return {
-        id: `${bucket}-${file.name}`,
-        name: configuredProduct?.name || nameFromFile(file.name!),
+        id: `${bucket}-${file.Key}`,
+        name: configuredProduct?.name || nameFromFile(file.Key!),
         description:
           configuredProduct?.description || `A signature design from ${titleFromBucket(bucket)}.`,
-        image:
-          configuredProduct?.image ||
-          imageUrls[index],
+        image: configuredProduct?.image || imageUrls[index],
         price: configuredProduct?.price ?? 24.99,
         colors: configuredProduct?.colors?.length ? configuredProduct.colors : ["Multi"],
       }
