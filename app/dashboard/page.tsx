@@ -38,10 +38,36 @@ export default function DashboardPage() {
   const [productPriceTon, setProductPriceTon] = useState("")
   const [productPriceUsd, setProductPriceUsd] = useState("")
   const [productCategory, setProductCategory] = useState("")
+  const [productImage, setProductImage] = useState<File | null>(null)
+  const [productImageUrl, setProductImageUrl] = useState("")
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [productError, setProductError] = useState("")
   const [localProducts, setLocalProducts] = useState<Product[]>(products)
+
+  async function handleImageUpload(file: File | null) {
+    setProductImage(file)
+    setProductImageUrl("")
+    setProductError("")
+    if (!file) return
+    setUploadingImage(true)
+    const formData = new FormData()
+    formData.append("file", file)
+    const response = await fetch("/api/seller/images", { method: "POST", body: formData })
+    const result = await response.json()
+    setUploadingImage(false)
+    if (!response.ok) {
+      setProductError(result.error || "Unable to upload image")
+      return
+    }
+    setProductImageUrl(result.url)
+  }
 
   function handleAddProduct(e: React.FormEvent) {
     e.preventDefault()
+    if (!productImageUrl) {
+      setProductError("Upload a product image before adding the product")
+      return
+    }
     const newProduct: Product = {
       id: `prod-${Date.now()}`,
       shop_id: shop!.id,
@@ -50,7 +76,7 @@ export default function DashboardPage() {
       description: productDesc,
       price_ton: parseFloat(productPriceTon) || 0,
       price_usd: parseFloat(productPriceUsd) || 0,
-      images: ["/colorful-patterned-socks-close-up.jpg"],
+      images: [productImageUrl],
       category: productCategory,
       sizes: ["S", "M", "L", "XL"],
       colors: ["Black", "White"],
@@ -66,6 +92,9 @@ export default function DashboardPage() {
     setProductPriceTon("")
     setProductPriceUsd("")
     setProductCategory("")
+    setProductImage(null)
+    setProductImageUrl("")
+    setProductError("")
   }
 
   if (!user) {
@@ -313,6 +342,23 @@ export default function DashboardPage() {
             {showProductForm && (
               <form onSubmit={handleAddProduct} className="rounded-xl border border-border p-6 space-y-4 bg-secondary/50">
                 <h3 className="font-semibold">New Product</h3>
+                {productError && <p className="font-mono text-sm text-destructive">{productError}</p>}
+                <div>
+                  <label htmlFor="product-image" className="block font-mono text-sm font-medium mb-2">Product image</label>
+                  <input
+                    id="product-image"
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp,image/avif"
+                    required
+                    onChange={(e) => void handleImageUpload(e.target.files?.[0] || null)}
+                    className="w-full rounded-lg border border-input bg-background px-4 py-3 font-mono text-sm"
+                  />
+                  <p className="font-mono text-xs text-muted-foreground mt-1">PNG, JPG, GIF, WEBP, or AVIF up to 10 MB. Stored in your RustFS seller bucket.</p>
+                  {uploadingImage && <p className="font-mono text-xs text-accent mt-2">Uploading image...</p>}
+                  {productImage && productImageUrl && (
+                    <img src={productImageUrl} alt="Product preview" className="mt-3 h-32 w-32 rounded-lg object-cover border border-border" />
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block font-mono text-sm font-medium mb-2">Name</label>

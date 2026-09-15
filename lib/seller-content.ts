@@ -2,6 +2,7 @@ import { headers } from "next/headers"
 import {
   GetObjectCommand,
   ListObjectsV2Command,
+  PutObjectCommand,
   S3Client,
   S3ServiceException,
 } from "@aws-sdk/client-s3"
@@ -79,7 +80,7 @@ function getFallbackContent(bucket: string): SellerContent {
   }
 }
 
-async function getBucketFromHost() {
+export async function getBucketFromHost() {
   const requestHeaders = await headers()
   const host = (requestHeaders.get("host") || "").split(":")[0].toLowerCase()
   const configuredBucket =
@@ -97,7 +98,7 @@ async function getBucketFromHost() {
   return subdomain || configuredBucket
 }
 
-function getRustfsClient() {
+export function getRustfsClient() {
   const endpoint = process.env.RUSTFS_ENDPOINT
   const accessKeyId = process.env.RUSTFS_ACCESS_KEY_ID
   const secretAccessKey = process.env.RUSTFS_SECRET_ACCESS_KEY
@@ -112,7 +113,7 @@ function getRustfsClient() {
   })
 }
 
-async function toSignedUrl(client: S3Client, bucket: string, path: string) {
+export async function toSignedUrl(client: S3Client, bucket: string, path: string) {
   return getSignedUrl(
     client,
     new GetObjectCommand({ Bucket: bucket, Key: path }),
@@ -147,6 +148,7 @@ export async function getSellerContent(): Promise<SellerContent> {
       if (contentFile.Body) {
         content = JSON.parse(await contentFile.Body.transformToString()) as ContentFile
       }
+
     } catch (error) {
       if (!(error instanceof S3ServiceException) || error.name !== "NoSuchKey") throw error
     }
