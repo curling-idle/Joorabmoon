@@ -17,6 +17,22 @@ export async function POST(request: Request) {
         ${data.role || "buyer"}, ${data.gender || ""}, ${data.city || ""}, ${data.country || ""}, ${data.wallet_address || ""})
       returning id, email
     `
+    if (data.role === "seller") {
+      const baseSlug = `${data.first_name}-${data.last_name}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+      await db`
+        insert into shops (owner_id, shop_name, slug, description, location)
+        values (
+          ${user.id},
+          ${`${data.first_name} ${data.last_name}'s Shop`},
+          ${`${baseSlug}-${String(user.id).slice(0, 8)}`},
+          ${`Discover socks designed by ${data.first_name} ${data.last_name}.`},
+          ${[data.city, data.country].filter(Boolean).join(", ")}
+        )
+      `
+    }
     const response = NextResponse.json({ user })
     response.cookies.set(cookieName, createSessionToken(user.id), { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 30 })
     return response

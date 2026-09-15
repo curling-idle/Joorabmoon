@@ -5,12 +5,37 @@ import { Button } from "@/components/ui/button"
 import { ShoppingCart, Heart } from "lucide-react"
 import { useState } from "react"
 import type { SellerContent } from "@/lib/seller-content"
+import type { Product } from "@/lib/mock-data"
+import { useCart } from "@/lib/cart-context"
+import { toast } from "sonner"
 
 export function ProductShowcase({ seller }: { seller: SellerContent }) {
   const [favorites, setFavorites] = useState<string[]>([])
+  const { addItem } = useCart()
 
   const toggleFavorite = (id: string) => {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((fav) => fav !== id) : [...prev, id]))
+  }
+
+  function handleAddToCart(product: SellerContent["products"][number]) {
+    const cartProduct: Product = {
+      id: product.id,
+      shop_id: seller.bucket,
+      name: product.name,
+      slug: product.id,
+      description: product.description,
+      price_ton: 0,
+      price_usd: product.price,
+      images: [product.image],
+      category: "socks",
+      sizes: ["M"],
+      colors: product.colors,
+      stock: 1,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    }
+    addItem(cartProduct, "M", product.colors[0] || "Multi")
+    toast.success(`${product.name} added to cart`)
   }
 
   return (
@@ -62,7 +87,7 @@ export function ProductShowcase({ seller }: { seller: SellerContent }) {
                 </div>
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   <span className="text-2xl font-bold">${product.price}</span>
-                  <Button className="group/btn">
+                  <Button className="group/btn" onClick={() => handleAddToCart(product)}>
                     <ShoppingCart className="mr-2 h-4 w-4 group-hover/btn:scale-110 transition-transform" />
                     Add to Cart
                   </Button>
