@@ -1,5 +1,5 @@
 // Mock data used when database is not connected
-// When NEXT_PUBLIC_SUPABASE_URL is set and active, real data is used instead
+// Used as a local fallback when PostgreSQL is not configured.
 
 export type Profile = {
   id: string

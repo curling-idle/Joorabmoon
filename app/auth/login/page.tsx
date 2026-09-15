@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Logo } from "@/components/logo"
 import { Eye, EyeOff, ArrowLeft } from "lucide-react"
@@ -15,8 +15,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const { signIn, isMockMode } = useAuth()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const redirect = searchParams.get("redirect") || "/"
+  const [redirect, setRedirect] = useState("/")
+  useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get("redirect")
+    if (value?.startsWith("/")) setRedirect(value)
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

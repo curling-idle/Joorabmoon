@@ -57,3 +57,11 @@ and an optional `content.json` file can customize the seller:
   ]
 }
 ```
+
+## Database and authentication
+
+Configure PostgreSQL with `DATABASE_URL` and run
+`scripts/001_create_schema.sql` against that database. Authentication uses the
+PostgreSQL `users` table and an HTTP-only signed session cookie. Copy
+`.env.example` to `.env.local` and replace the placeholder credentials before
+starting the app.
